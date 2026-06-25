@@ -16,6 +16,7 @@ import {
   Send,
   Phone,
 } from "lucide-react";
+import { useLeadModal } from "@/context/lead-modal";
 
 /**
  * MirWebLaptopHero — scroll-driven cinematic product reveal.
@@ -72,9 +73,9 @@ export function MirWebLaptopHero() {
   // Smooth the raw scroll progress so the whole scene glides instead of
   // tracking jittery scroll deltas frame-for-frame.
   const progress = useSpring(scrollYProgress, {
-    stiffness: 48,
-    damping: 24,
-    mass: 0.55,
+    stiffness: 40,
+    damping: 26,
+    mass: 0.6,
   });
 
   const [isMobile, setIsMobile] = useState(false);
@@ -625,11 +626,17 @@ function LaptopScreenUI() {
 /* FullscreenWebsiteState — you "land" inside the site                 */
 /* ------------------------------------------------------------------ */
 function FullscreenWebsiteState({ progress }: { progress: MotionValue<number> }) {
+  const { open } = useLeadModal();
   const opacity = useTransform(progress, [0.78, 0.9], [0, 1]);
   const scale = useTransform(progress, [0.78, 0.96], [1.08, 1]);
+  // Only catch clicks once the state is actually shown, so the invisible layer
+  // never blocks (or steals) clicks during the earlier phases.
+  const pointerEvents = useTransform(progress, (v) => (v > 0.82 ? "auto" : "none"));
+  const viewExample = () =>
+    document.getElementById("examples")?.scrollIntoView({ behavior: "smooth" });
   return (
     <motion.div
-      style={{ opacity, scale }}
+      style={{ opacity, scale, pointerEvents: pointerEvents as never }}
       className="absolute inset-0 z-40 flex flex-col"
     >
       <div className="absolute inset-0" style={{ background: COLOR.bg }} />
@@ -665,18 +672,24 @@ function FullscreenWebsiteState({ progress }: { progress: MotionValue<number> })
           который понятен клиенту с первого экрана.
         </p>
         <div className="mt-9 flex flex-col items-center gap-3 sm:flex-row">
-          <span
-            className="inline-flex items-center gap-2 rounded-full px-7 py-3.5 text-sm font-semibold text-white"
+          <button
+            type="button"
+            onClick={open}
+            className="inline-flex items-center gap-2 rounded-full px-7 py-3.5 text-sm font-semibold text-white transition-transform hover:scale-[1.03] active:scale-95"
             style={{
               background: `linear-gradient(90deg, ${COLOR.blue}, ${COLOR.violet})`,
               boxShadow: "0 14px 40px -12px rgba(139,92,246,0.7)",
             }}
           >
             Оставить заявку <ArrowRight className="size-4" />
-          </span>
-          <span className="rounded-full border border-white/[0.14] bg-white/[0.04] px-7 py-3.5 text-sm font-medium text-white/80 backdrop-blur">
+          </button>
+          <button
+            type="button"
+            onClick={viewExample}
+            className="rounded-full border border-white/[0.14] bg-white/[0.04] px-7 py-3.5 text-sm font-medium text-white/80 backdrop-blur transition-colors hover:bg-white/[0.08]"
+          >
             Посмотреть пример
-          </span>
+          </button>
         </div>
       </div>
     </motion.div>
