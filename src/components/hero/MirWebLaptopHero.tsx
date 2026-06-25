@@ -2,7 +2,6 @@ import { useEffect, useRef, useState } from "react";
 import {
   motion,
   useMotionValue,
-  useSpring,
   useTransform,
   useReducedMotion,
   type MotionValue,
@@ -70,13 +69,8 @@ export function MirWebLaptopHero() {
     };
   }, [scrollYProgress]);
 
-  // Smooth the raw scroll progress so the whole scene glides instead of
-  // tracking jittery scroll deltas frame-for-frame.
-  const progress = useSpring(scrollYProgress, {
-    stiffness: 40,
-    damping: 26,
-    mass: 0.6,
-  });
+  // Drive the scene directly from scroll (1:1, no spring catch-up lag).
+  const progress = scrollYProgress;
 
   const [isMobile, setIsMobile] = useState(false);
   useEffect(() => {
@@ -321,6 +315,20 @@ function LaptopDevice({
   baseOpacity: MotionValue<number>;
   screenOpacity: MotionValue<number>;
 }) {
+  // Render the screen UI at a fixed design width and scale it to the actual lid
+  // size, so the inside looks identical (just smaller) on phones instead of
+  // overflowing / clipping.
+  const screenRef = useRef<HTMLDivElement>(null);
+  const [screenScale, setScreenScale] = useState(1);
+  useEffect(() => {
+    const el = screenRef.current;
+    if (!el) return;
+    const f = () => setScreenScale(el.clientWidth / 800);
+    f();
+    const ro = new ResizeObserver(f);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
   return (
     <>
       {/* screen glow */}
@@ -355,9 +363,21 @@ function LaptopDevice({
         >
           <div className="absolute inset-0 rounded-[16px] rounded-b-[5px] ring-1 ring-white/10 md:rounded-[22px]" />
           <span className="absolute left-1/2 top-[4px] h-1 w-1 -translate-x-1/2 rounded-full bg-white/25 md:top-[6px]" />
-          <div className="relative h-full w-full overflow-hidden rounded-[11px] bg-[#080a16] md:rounded-[15px]">
-            <motion.div style={{ opacity: screenOpacity }} className="h-full w-full">
-              <LaptopScreenUI />
+          <div
+            ref={screenRef}
+            className="relative h-full w-full overflow-hidden rounded-[11px] bg-[#080a16] md:rounded-[15px]"
+          >
+            <motion.div style={{ opacity: screenOpacity }} className="absolute inset-0">
+              <div
+                style={{
+                  width: 800,
+                  height: 490,
+                  transformOrigin: "top left",
+                  transform: `scale(${screenScale})`,
+                }}
+              >
+                <LaptopScreenUI />
+              </div>
             </motion.div>
             {/* glass sheen */}
             <div className="pointer-events-none absolute inset-0 bg-gradient-to-br from-white/[0.07] via-transparent to-transparent" />
@@ -504,6 +524,9 @@ function SourceChip({
 /* LaptopScreenUI — the MirWeb site rendered inside the lid            */
 /* ------------------------------------------------------------------ */
 function LaptopScreenUI() {
+  const { open } = useLeadModal();
+  const viewExample = () =>
+    document.getElementById("examples")?.scrollIntoView({ behavior: "smooth" });
   return (
     <div className="flex h-full w-full flex-col bg-[#080a16] text-left">
       {/* site header */}
@@ -523,9 +546,13 @@ function LaptopScreenUI() {
           <span>Тарифы</span>
           <span>Контакты</span>
         </nav>
-        <span className="rounded-full bg-white/10 px-3 py-1 text-[10px] text-white/85 md:text-[11px]">
+        <button
+          type="button"
+          onClick={open}
+          className="rounded-full bg-white/10 px-3 py-1 text-[10px] text-white/85 transition-colors hover:bg-white/20 md:text-[11px]"
+        >
           Получить демо
-        </span>
+        </button>
       </div>
 
       {/* body */}
@@ -558,18 +585,24 @@ function LaptopScreenUI() {
               обязательств.
             </p>
             <div className="mt-3.5 flex items-center gap-2">
-              <span
-                className="inline-flex items-center gap-1.5 rounded-full px-3.5 py-2 text-[10px] font-semibold text-white shadow-lg md:text-[11px]"
+              <button
+                type="button"
+                onClick={open}
+                className="inline-flex items-center gap-1.5 rounded-full px-3.5 py-2 text-[10px] font-semibold text-white shadow-lg transition-transform hover:scale-[1.04] active:scale-95 md:text-[11px]"
                 style={{
                   background: `linear-gradient(90deg, ${COLOR.blue}, ${COLOR.violet})`,
                   boxShadow: "0 8px 24px -8px rgba(139,92,246,0.6)",
                 }}
               >
                 Оставить заявку <ArrowRight className="size-3" />
-              </span>
-              <span className="rounded-full border border-white/12 px-3.5 py-2 text-[10px] font-medium text-white/75 md:text-[11px]">
+              </button>
+              <button
+                type="button"
+                onClick={viewExample}
+                className="rounded-full border border-white/12 px-3.5 py-2 text-[10px] font-medium text-white/75 transition-colors hover:bg-white/10 md:text-[11px]"
+              >
                 Посмотреть пример
-              </span>
+              </button>
             </div>
           </div>
           <div className="col-span-2 overflow-hidden rounded-xl bg-gradient-to-br from-[#2563EB]/30 via-[#8B5CF6]/15 to-[#38BDF8]/15 ring-1 ring-white/10">
