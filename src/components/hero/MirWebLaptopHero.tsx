@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import {
   motion,
   useMotionValue,
+  useSpring,
   useTransform,
   useReducedMotion,
   type MotionValue,
@@ -69,8 +70,14 @@ export function MirWebLaptopHero() {
     };
   }, [scrollYProgress]);
 
-  // Drive the scene directly from scroll (1:1, no spring catch-up lag).
-  const progress = scrollYProgress;
+  // Smooth the scroll progress (matches the deployed version that felt good).
+  // NB: local `npm run dev` is much heavier than the production build — judge
+  // smoothness on the Vercel deploy, not dev mode.
+  const progress = useSpring(scrollYProgress, {
+    stiffness: 40,
+    damping: 26,
+    mass: 0.6,
+  });
 
   const [isMobile, setIsMobile] = useState(false);
   useEffect(() => {
