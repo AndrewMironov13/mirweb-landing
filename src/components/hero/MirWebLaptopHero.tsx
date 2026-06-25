@@ -74,9 +74,9 @@ export function MirWebLaptopHero() {
   // NB: local `npm run dev` is much heavier than the production build — judge
   // smoothness on the Vercel deploy, not dev mode.
   const progress = useSpring(scrollYProgress, {
-    stiffness: 40,
-    damping: 26,
-    mass: 0.6,
+    stiffness: 48,
+    damping: 24,
+    mass: 0.55,
   });
 
   const [isMobile, setIsMobile] = useState(false);
